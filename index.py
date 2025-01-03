@@ -1,25 +1,42 @@
+import os
 import shutil
 from markitdown import MarkItDown
 from fastapi import FastAPI, UploadFile
 from uuid import uuid4
 
+# Instantiate MarkItDown
 md = MarkItDown()
 
+# FastAPI app
 app = FastAPI()
+
+# Writable directory for temporary files
+WRITABLE_DIR = "/tmp"  # Replace with "/workspace" or another writable path if needed
 
 @app.post("/convert")
 async def convert_markdown(file: UploadFile):
-    unique_id = uuid4()
-    temp_dir = f"./temp/{unique_id}"
+    try:
+        # Create a unique temporary directory
+        unique_id = uuid4()
+        temp_dir = os.path.join(WRITABLE_DIR, str(unique_id))
+        os.makedirs(temp_dir, exist_ok=True)
 
-    shutil.os.makedirs(temp_dir, exist_ok=True)
+        # Save the uploaded file to the temporary directory
+        file_path = os.path.join(temp_dir, file.filename)
+        with open(file_path, "wb") as f:
+            shutil.copyfileobj(file.file, f)
 
-    file_path = f"{temp_dir}/{file.filename}"
-    with open(file_path, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-    result = md.convert(file_path)
-    content = result.text_content
+        # Convert the file using MarkItDown
+        result = md.convert(file_path)
+        content = result.text_content
 
-    shutil.rmtree(temp_dir)
+        # Clean up the temporary directory
+        shutil.rmtree(temp_dir)
 
-    return {"result": content}
+        return {"result": content}
+
+    except Exception as e:
+        # Clean up in case of error
+        if os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir)
+        return {"error": str(e)}
