@@ -1,8 +1,9 @@
 import os
 import shutil
 from markitdown import MarkItDown
-from fastapi import FastAPI, UploadFile
+from fastapi import FastAPI, UploadFile, Form
 from uuid import uuid4
+from openai import OpenAI
 
 # FastAPI app
 app = FastAPI()
