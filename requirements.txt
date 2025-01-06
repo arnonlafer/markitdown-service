@@ -1,3 +1,4 @@
 markitdown
 fastapi[standard]
 uvicorn
+openai
