@@ -37,12 +37,12 @@ async def convert_markdown(file: UploadFile, api_key: str = Form(None), use_docl
 
         # Convert the file
         if use_docling:
-            result = converter.convert_to_markdown(file_path)  # Assuming Docling's method
+            result = converter.convert(file_path)  # Assuming Docling's method
         else:
             result = converter.convert(file_path)  # MarkItDown's method
 
         # Extract content based on the converter used
-        content = result.text_content if not use_docling else result
+        content = result.text_content if not use_docling else result.document.export_to_markdown()
 
         # Clean up the temporary directory
         shutil.rmtree(temp_dir)
