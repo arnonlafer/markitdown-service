@@ -4,9 +4,6 @@ from markitdown import MarkItDown
 from fastapi import FastAPI, UploadFile
 from uuid import uuid4
 
-# Instantiate MarkItDown
-md = MarkItDown()
-
 # FastAPI app
 app = FastAPI()
 
@@ -14,8 +11,16 @@ app = FastAPI()
 WRITABLE_DIR = "/tmp"  # Replace with "/workspace" or another writable path if needed
 
 @app.post("/convert")
-async def convert_markdown(file: UploadFile):
+async def convert_markdown(file: UploadFile, api_key: str = Form(None)):
     try:
+        # Initialize the MarkItDown instance
+        if api_key:
+            client = OpenAI(api_key=api_key)
+            md = MarkItDown(llm_client=client, llm_model="gpt-4o")
+        else:
+            md = MarkItDown()
+
+        
         # Create a unique temporary directory
         unique_id = uuid4()
         temp_dir = os.path.join(WRITABLE_DIR, str(unique_id))
