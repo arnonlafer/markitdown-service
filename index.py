@@ -4,6 +4,7 @@ from markitdown import MarkItDown
 from fastapi import FastAPI, UploadFile, Form
 from uuid import uuid4
 from openai import OpenAI
+from docling.document_converter import DocumentConverter
 
 # FastAPI app
 app = FastAPI()
@@ -12,16 +13,18 @@ app = FastAPI()
 WRITABLE_DIR = "/tmp"  # Replace with "/workspace" or another writable path if needed
 
 @app.post("/convert")
-async def convert_markdown(file: UploadFile, api_key: str = Form(None)):
+async def convert_markdown(file: UploadFile, api_key: str = Form(None), use_docling: bool = Form(False)):
     try:
-        # Initialize the MarkItDown instance
-        if api_key:
-            client = OpenAI(api_key=api_key)
-            md = MarkItDown(llm_client=client, llm_model="gpt-4o")
+        # Initialize the converter based on the parameter
+        if use_docling:
+            converter = DocumentConverter()
         else:
-            md = MarkItDown()
+            if api_key:
+                client = OpenAI(api_key=api_key)
+                converter = MarkItDown(llm_client=client, llm_model="gpt-4o")
+            else:
+                converter = MarkItDown()
 
-        
         # Create a unique temporary directory
         unique_id = uuid4()
         temp_dir = os.path.join(WRITABLE_DIR, str(unique_id))
@@ -32,9 +35,14 @@ async def convert_markdown(file: UploadFile, api_key: str = Form(None)):
         with open(file_path, "wb") as f:
             shutil.copyfileobj(file.file, f)
 
-        # Convert the file using MarkItDown
-        result = md.convert(file_path)
-        content = result.text_content
+        # Convert the file
+        if use_docling:
+            result = converter.convert_to_markdown(file_path)  # Assuming Docling's method
+        else:
+            result = converter.convert(file_path)  # MarkItDown's method
+
+        # Extract content based on the converter used
+        content = result.text_content if not use_docling else result
 
         # Clean up the temporary directory
         shutil.rmtree(temp_dir)
